@@ -1,3 +1,6 @@
+import { APP_INTERCEPTOR, APP_FILTER } from '@nestjs/core';
+import { HttpExceptionFilter } from './common/filters/http-exception.filter';
+import { ConfigModule } from '@nestjs/config';
 import { Module } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
@@ -10,8 +13,22 @@ import { CommitteesModule } from './committees/committees.module';
 import { ContactModule } from './contact/contact.module';
 
 @Module({
-  imports: [AuthModule, BlogModule, EventsModule, AnnouncementsModule, ApplicationsModule, CommitteesModule, ContactModule],
+  imports: [
+    ConfigModule.forRoot({
+      isGlobal: true,
+    }),
+    AuthModule,
+    BlogModule,
+    EventsModule,
+    AnnouncementsModule,
+    ApplicationsModule,
+    CommitteesModule,
+    ContactModule,
+  ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [
+    AppService,
+    { provide: APP_FILTER, useClass: HttpExceptionFilter },
+  ],
 })
 export class AppModule {}
