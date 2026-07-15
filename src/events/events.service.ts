@@ -1,3 +1,5 @@
+import { CreateRegistrationDto } from './dto/create-registration.dto';
+import { BadRequestException } from '@nestjs/common';
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
 import { CreateEventDto } from './dto/create-event.dto';
@@ -50,6 +52,33 @@ export class EventsService {
     }
     return prisma.event.delete({
       where: { id },
+    });
+  }
+  async register(eventId: string, dto: CreateRegistrationDto) {
+    const event = await prisma.event.findUnique({
+      where: { id: eventId },
+      include: { registrations: true },
+    });
+
+    if (!event) {
+      throw new NotFoundException(`${eventId} ID'li etkinlik bulunamadı`);
+    }
+
+    if (event.isCancelled) {
+      throw new BadRequestException('Bu etkinlik iptal edilmiş, kayıt alınamaz');
+    }
+
+    if (event.registrations.length >= event.capacity) {
+      throw new BadRequestException('Kontenjan dolmuştur');
+    }
+
+    return prisma.eventRegistration.create({
+      data: {
+        eventId,
+        fullName: dto.fullName,
+        email: dto.email,
+        studentNo: dto.studentNo,
+      },
     });
   }
 }

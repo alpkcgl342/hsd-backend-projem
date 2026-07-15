@@ -2,6 +2,7 @@ import { Controller, Post, Get, Body, Param, Patch, Delete } from '@nestjs/commo
 import { EventsService } from './events.service';
 import { CreateEventDto } from './dto/create-event.dto';
 import { UpdateEventDto } from './dto/update-event.dto';
+import { CreateRegistrationDto } from './dto/create-registration.dto';
 
 @Controller('events')
 export class EventsController {
@@ -30,5 +31,10 @@ export class EventsController {
   @Delete(':id')
   remove(@Param('id') id: string) {
     return this.eventsService.remove(id);
+  }
+
+  @Post(':id/register')
+  register(@Param('id') id: string, @Body() dto: CreateRegistrationDto) {
+    return this.eventsService.register(id, dto);
   }
 }
