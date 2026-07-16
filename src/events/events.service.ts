@@ -22,11 +22,24 @@ export class EventsService {
     });
   }
 
-  async findAll() {
-    return prisma.event.findMany({
-      orderBy: { startDate: 'asc' },
-    });
-  }
+  async findAll(category?: string, status?: string) {
+      const where: any = {};
+
+      if (category) {
+        where.category = category;
+      }
+
+      if (status === 'upcoming') {
+        where.startDate = { gte: new Date() };
+      } else if (status === 'past') {
+        where.startDate = { lt: new Date() };
+      }
+
+      return prisma.event.findMany({
+        where,
+        orderBy: { startDate: 'asc' },
+      });
+    }
 
   async findOne(id: string) {
     return prisma.event.findUnique({
