@@ -1,9 +1,8 @@
-import { CreateRegistrationDto } from './dto/create-registration.dto';
-import { BadRequestException } from '@nestjs/common';
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
 import { CreateEventDto } from './dto/create-event.dto';
 import { UpdateEventDto } from './dto/update-event.dto';
+import { CreateRegistrationDto } from './dto/create-registration.dto';
 
 const prisma = new PrismaClient();
 
@@ -45,6 +44,7 @@ export class EventsService {
       },
     });
   }
+
   async remove(id: string) {
     const event = await prisma.event.findUnique({ where: { id } });
     if (!event) {
@@ -54,6 +54,7 @@ export class EventsService {
       where: { id },
     });
   }
+
   async register(eventId: string, dto: CreateRegistrationDto) {
     const event = await prisma.event.findUnique({
       where: { id: eventId },
@@ -79,6 +80,18 @@ export class EventsService {
         email: dto.email,
         studentNo: dto.studentNo,
       },
+    });
+  }
+
+  async getRegistrations(eventId: string) {
+    const event = await prisma.event.findUnique({ where: { id: eventId } });
+    if (!event) {
+      throw new NotFoundException(`${eventId} ID'li etkinlik bulunamadı`);
+    }
+
+    return prisma.eventRegistration.findMany({
+      where: { eventId },
+      orderBy: { registeredAt: 'asc' },
     });
   }
 }

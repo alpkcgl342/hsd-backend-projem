@@ -37,4 +37,8 @@ export class EventsController {
   register(@Param('id') id: string, @Body() dto: CreateRegistrationDto) {
     return this.eventsService.register(id, dto);
   }
+  @Get(':id/registrations')
+  getRegistrations(@Param('id') id: string) {
+    return this.eventsService.getRegistrations(id);
+  }
 }
