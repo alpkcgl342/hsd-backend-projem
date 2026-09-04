@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
+import { MailService } from '../common/mail/mail.service';
 import { CreateEventDto } from './dto/create-event.dto';
 import { UpdateEventDto } from './dto/update-event.dto';
 import { CreateRegistrationDto } from './dto/create-registration.dto';
@@ -8,6 +9,8 @@ const prisma = new PrismaClient();
 
 @Injectable()
 export class EventsService {
+  constructor(private mail: MailService) {}
+
   async create(createEventDto: CreateEventDto) {
     return prisma.event.create({
       data: {
@@ -86,7 +89,7 @@ export class EventsService {
       throw new BadRequestException('Kontenjan dolmuştur');
     }
 
-    return prisma.eventRegistration.create({
+    const registration = await prisma.eventRegistration.create({
       data: {
         eventId,
         fullName: dto.fullName,
@@ -94,6 +97,10 @@ export class EventsService {
         studentNo: dto.studentNo,
       },
     });
+  
+
+  await this.mail.sendEventConfirmation(dto.email, dto.fullName, event.title);
+  return registration;
   }
 
   async getRegistrations(eventId: string) {
