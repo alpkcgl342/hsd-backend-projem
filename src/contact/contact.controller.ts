@@ -1,4 +1,4 @@
-import { Controller, Post, Get, Body, Param, Delete, Req } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Delete, Req } from '@nestjs/common';
 import { ContactService } from './contact.service';
 import { CreateContactDto } from './dto/create-contact.dto';
 import type { Request } from 'express';
@@ -8,9 +8,9 @@ export class ContactController {
   constructor(private readonly contactService: ContactService) {}
 
   @Post()
-  create(@Body() dto: CreateContactDto, @Req() req: Request) {
-    const ipAddress = req.ip;
-    return this.contactService.create(dto, ipAddress);
+  create(@Body() createContactDto: CreateContactDto, @Req() req: Request) {
+    const ipAddress = (req.headers['x-forwarded-for'] as string) || req.socket.remoteAddress;
+    return this.contactService.create(createContactDto, ipAddress);
   }
 
   @Get()
