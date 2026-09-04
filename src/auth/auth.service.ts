@@ -1,7 +1,7 @@
 import { Injectable, UnauthorizedException, ConflictException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import { PrismaClient } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
+import { PrismaClient } from '@prisma/client';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 
@@ -31,17 +31,9 @@ export class AuthService {
 
     const payload = { sub: user.id, email: user.email, role: user.role };
 
-    const accessToken = this.jwt.sign(payload, { expiresIn: '15m' });
-    const refreshToken = this.jwt.sign(payload, { expiresIn: '7d' });
-
-    await prisma.refreshToken.create({
-      data: {
-        token: refreshToken,
-        userId: user.id,
-        expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-      },
-    });
-
-    return { accessToken, refreshToken };
+    return {
+      accessToken: this.jwt.sign(payload, { expiresIn: '15m' }),
+      refreshToken: this.jwt.sign(payload, { expiresIn: '7d' }),
+    };
   }
 }

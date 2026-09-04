@@ -4,6 +4,6 @@ import { CommitteesService } from './committees.service';
 
 @Module({
   controllers: [CommitteesController],
-  providers: [CommitteesService]
+  providers: [CommitteesService],
 })
 export class CommitteesModule {}
