@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaClient, ApplicationStatus } from '@prisma/client';
+import { MailService } from '../common/mail/mail.service';
 import { CreateApplicationDto } from './dto/create-application.dto';
 import { UpdateApplicationStatusDto } from './dto/update-application-status.dto';
 
@@ -7,6 +8,7 @@ const prisma = new PrismaClient();
 
 @Injectable()
 export class ApplicationsService {
+  constructor(private mail: MailService) {} 
   create(dto: CreateApplicationDto) {
     return prisma.membershipApplication.create({ data: dto });
   }
@@ -31,11 +33,17 @@ export class ApplicationsService {
       throw new BadRequestException('Bu başvuru için zaten karar verilmiş');
     }
 
-    return prisma.membershipApplication.update({
+    const updated = await prisma.membershipApplication.update({
       where: { id },
       data: { status: dto.status },
-      // Not: Kerim'in mail servisi hazır olunca buraya
-      // sendApplicationResultEmail(...) çağrısı eklenecek
     });
+
+    await this.mail.sendApplicationResult(
+      updated.email,
+      updated.fullName,
+      dto.status as 'APPROVED' | 'REJECTED',
+    );
+
+    return updated;
   }
 }
