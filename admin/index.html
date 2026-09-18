@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="noindex, nofollow">
+    <title>HSD Gelişim — Yönetim Paneli</title>
+
+    <link rel="stylesheet" href="css/tailwind.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/panel.css">
+
+</head>
+<body class="bg-gray-100 min-h-screen">
+
+<div class="flex min-h-screen">
+
+    <!-- KENAR MENÜ -->
+    <aside id="kenarMenu" class="w-60 bg-[#04067c] text-white flex-col hidden lg:flex shrink-0">
+        <div class="px-6 py-6 border-b border-white/10">
+            <div class="text-xl font-extrabold tracking-tight">&lt; HSD &gt;</div>
+            <p class="text-blue-200/70 text-[10px] font-semibold tracking-[0.18em] mt-0.5">YÖNETİM PANELİ</p>
+        </div>
+
+        <nav id="menu" class="flex-1 px-3 py-4 space-y-1 overflow-y-auto"></nav>
+
+        <div class="px-3 pb-5 pt-3 border-t border-white/10">
+            <p id="kullaniciEposta" class="text-blue-200/60 text-xs px-3 mb-2 truncate"></p>
+            <button id="cikisBtn"
+                class="w-full text-left px-3 py-2 rounded-xl text-sm font-medium text-blue-100 hover:bg-white/10 transition">
+                Çıkış Yap
+            </button>
+        </div>
+    </aside>
+
+    <!-- İÇERİK -->
+    <div class="flex-1 min-w-0 flex flex-col">
+
+        <header class="bg-white border-b border-gray-200 px-5 py-4 flex items-center justify-between sticky top-0 z-30">
+            <div class="flex items-center gap-3 min-w-0">
+                <button id="menuBtn" class="lg:hidden text-gray-600 text-2xl leading-none">☰</button>
+                <div class="min-w-0">
+                    <h1 id="bolumBaslik" class="font-bold text-gray-900 text-lg truncate">Duyurular</h1>
+                    <p id="bolumAciklama" class="text-gray-400 text-xs truncate"></p>
+                </div>
+            </div>
+            <button id="ekleBtn"
+                class="bg-[#0028a5] hover:bg-[#04067c] text-white text-sm font-semibold px-4 py-2.5 rounded-xl transition whitespace-nowrap">
+                + Yeni Ekle
+            </button>
+        </header>
+
+        <main id="icerik" class="flex-1 p-5 overflow-x-hidden">
+            <div class="text-center text-gray-400 text-sm py-20">Yükleniyor…</div>
+        </main>
+    </div>
+</div>
+
+<!-- Mobil menü perdesi -->
+<div id="menuPerde" class="fixed inset-0 bg-black/50 z-40 hidden lg:hidden"></div>
+
+<!-- Bildirimler -->
+<div id="bildirimler" class="fixed bottom-5 right-5 z-[60] space-y-2 w-80 max-w-[calc(100vw-2.5rem)]"></div>
+
+<script src="js/api.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/sections/duyurular.js"></script>
+<script src="js/sections/blog.js"></script>
+<script src="js/sections/etkinlikler.js"></script>
+<script src="js/sections/komiteler.js"></script>
+<script src="js/sections/ekibimiz.js"></script>
+<script src="js/sections/bulten.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>

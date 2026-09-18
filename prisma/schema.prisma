@@ -65,6 +65,9 @@ model BlogPost {
   title        String
   slug         String     @unique
   content      String
+  // Kart görünümünde kullanılan kapak görseli ve kısa özet
+  coverImage   String?
+  excerpt      String?
   status       PostStatus @default(DRAFT)
   readingTime  Int?
   viewCount    Int        @default(0)
@@ -110,9 +113,24 @@ model Event {
   endDate       DateTime?
   capacity      Int
   isCancelled   Boolean  @default(false)
+  coverImage    String?
   registrations EventRegistration[]
+  photos        EventPhoto[]
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
+}
+
+// Etkinlik fotoğraf galerisi
+model EventPhoto {
+  id        String   @id @default(cuid())
+  eventId   String
+  event     Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  url       String
+  caption   String?
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+
+  @@index([eventId])
 }
 
 model EventRegistration {
@@ -179,7 +197,13 @@ enum CommitteeRole {
 model Committee {
   id          String            @id @default(cuid())
   name        String            @unique
+  // Sitedeki ekip sayfası bağlantılarında kullanılır (ör. "teknik")
+  slug        String            @unique
   description String?
+  // Kart görünümündeki emoji ve tema rengi
+  icon        String?
+  color       String?
+  order       Int               @default(0)
   members     CommitteeMember[]
   createdAt   DateTime          @default(now())
   updatedAt   DateTime          @updatedAt
@@ -189,13 +213,50 @@ model CommitteeMember {
   id           String        @id @default(cuid())
   committeeId  String
   committee    Committee     @relation(fields: [committeeId], references: [id], onDelete: Cascade)
-  userId       String
-  user         User          @relation(fields: [userId], references: [id])
+
+  // Komite üyelerinin çoğu sisteme kayıtlı kullanıcı değil (tanıtım sitesinde
+  // yalnızca gösteriliyorlar). Bu yüzden userId zorunlu değil; ad ve diğer
+  // bilgiler doğrudan burada tutulur.
+  userId       String?
+  user         User?         @relation(fields: [userId], references: [id])
+
+  fullName     String
+  department   String?
+  linkedinUrl  String?
   role         CommitteeRole @default(UYE)
   photoUrl     String?
+  order        Int           @default(0)
   joinedAt     DateTime      @default(now())
 
   @@unique([committeeId, userId])
+  @@index([committeeId])
+}
+
+// ==========================================
+// EKİBİMİZ (Elçi / Elçi Yardımcıları / Kulüp Başkanları)
+// ==========================================
+
+enum TeamGroup {
+  ELCI
+  ELCI_YARDIMCISI
+  KULUP_BASKANI
+}
+
+model TeamMember {
+  id          String    @id @default(cuid())
+  fullName    String
+  // Kartta rozet olarak görünen unvan (ör. "Web Sitesi Proje Lideri")
+  title       String
+  group       TeamGroup
+  // Başkan kartlarının altındaki küçük açıklama (ör. "Kulüp 1")
+  subtitle    String?
+  photoUrl    String?
+  linkedinUrl String?
+  order       Int       @default(0)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([group, order])
 }
 
 // ==========================================

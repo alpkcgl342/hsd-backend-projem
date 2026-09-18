@@ -18,6 +18,7 @@ import { SubscribeNewsletterDto } from './dto/subscribe-newsletter.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { Role } from '@prisma/client';
 
 @Controller('blog')
@@ -29,8 +30,8 @@ export class BlogController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ADMIN, Role.EDITOR)
   @Post()
-  create(@Body() dto: CreatePostDto) {
-    return this.blogService.create(dto);
+  create(@Body() dto: CreatePostDto, @CurrentUser('userId') userId: string) {
+    return this.blogService.create(dto, userId);
   }
 
   @Get()
@@ -103,5 +104,20 @@ export class BlogController {
   @Post('newsletter/unsubscribe')
   unsubscribe(@Body('email') email: string) {
     return this.blogService.unsubscribe(email);
+  }
+
+  // Yönetim paneli: abone listesi ve silme
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN, Role.EDITOR)
+  @Get('newsletter/subscribers')
+  findAllSubscribers(@Query('active') active?: string) {
+    return this.blogService.findAllSubscribers(active === 'true');
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
+  @Delete('newsletter/subscribers/:id')
+  removeSubscriber(@Param('id') id: string) {
+    return this.blogService.removeSubscriber(id);
   }
 }

@@ -13,6 +13,8 @@ import { EventsService } from './events.service';
 import { CreateEventDto } from './dto/create-event.dto';
 import { UpdateEventDto } from './dto/update-event.dto';
 import { CreateRegistrationDto } from './dto/create-registration.dto';
+import { CreateEventPhotoDto } from './dto/create-event-photo.dto';
+import { UpdateEventPhotoDto } from './dto/update-event-photo.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
@@ -68,5 +70,34 @@ export class EventsController {
   @Get(':id/registrations')
   getRegistrations(@Param('id') id: string) {
     return this.eventsService.getRegistrations(id);
+  }
+
+  // --- ETKİNLİK FOTOĞRAFLARI ---
+
+  // Galeri herkese açık
+  @Get(':id/photos')
+  getPhotos(@Param('id') id: string) {
+    return this.eventsService.getPhotos(id);
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN, Role.EDITOR)
+  @Post(':id/photos')
+  addPhoto(@Param('id') id: string, @Body() dto: CreateEventPhotoDto) {
+    return this.eventsService.addPhoto(id, dto);
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN, Role.EDITOR)
+  @Patch('photos/:photoId')
+  updatePhoto(@Param('photoId') photoId: string, @Body() dto: UpdateEventPhotoDto) {
+    return this.eventsService.updatePhoto(photoId, dto);
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN, Role.EDITOR)
+  @Delete('photos/:photoId')
+  removePhoto(@Param('photoId') photoId: string) {
+    return this.eventsService.removePhoto(photoId);
   }
 }

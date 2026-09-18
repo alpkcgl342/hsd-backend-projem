@@ -43,6 +43,8 @@ export function createPrismaMock() {
     committee: model(),
     committeeMember: model(),
     contactMessage: model(),
+    eventPhoto: model(),
+    teamMember: model(),
   };
 
   mock.$transaction = jest.fn((arg: any) =>

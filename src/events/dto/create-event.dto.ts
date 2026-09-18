@@ -5,7 +5,9 @@ import {
   Min,
   IsDateString,
   IsOptional,
+  IsBoolean,
 } from 'class-validator';
+import { Type } from 'class-transformer';
 
 export class CreateEventDto {
   @IsString()
@@ -31,7 +33,16 @@ export class CreateEventDto {
   @IsOptional()
   endDate?: string;
 
+  @Type(() => Number)
   @IsInt()
   @Min(1)
   capacity: number;
+
+  @IsOptional()
+  @IsString()
+  coverImage?: string;
+
+  @IsOptional()
+  @IsBoolean()
+  isCancelled?: boolean;
 }

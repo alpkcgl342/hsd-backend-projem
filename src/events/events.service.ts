@@ -4,6 +4,8 @@ import { MailService } from '../common/mail/mail.service';
 import { CreateEventDto } from './dto/create-event.dto';
 import { UpdateEventDto } from './dto/update-event.dto';
 import { CreateRegistrationDto } from './dto/create-registration.dto';
+import { CreateEventPhotoDto } from './dto/create-event-photo.dto';
+import { UpdateEventPhotoDto } from './dto/update-event-photo.dto';
 
 
 @Injectable()
@@ -23,7 +25,9 @@ export class EventsService {
         startDate: new Date(createEventDto.startDate),
         endDate: createEventDto.endDate ? new Date(createEventDto.endDate) : null,
         capacity: createEventDto.capacity,
+        coverImage: createEventDto.coverImage,
       },
+      include: { photos: { orderBy: { order: 'asc' } } },
     });
   }
 
@@ -42,14 +46,18 @@ export class EventsService {
 
       return this.prisma.event.findMany({
         where,
+        include: { photos: { orderBy: { order: 'asc' } } },
         orderBy: { startDate: 'asc' },
       });
     }
 
   async findOne(id: string) {
-    return this.prisma.event.findUnique({
+    const event = await this.prisma.event.findUnique({
       where: { id },
+      include: { photos: { orderBy: { order: 'asc' } } },
     });
+    if (!event) throw new NotFoundException(`${id} ID'li etkinlik bulunamadı`);
+    return event;
   }
 
   async update(id: string, updateEventDto: UpdateEventDto) {
@@ -127,5 +135,34 @@ export class EventsService {
       where: { eventId },
       orderBy: { registeredAt: 'asc' },
     });
+  }
+
+  // --- ETKİNLİK FOTOĞRAFLARI ---
+
+  async addPhoto(eventId: string, dto: CreateEventPhotoDto) {
+    await this.findOne(eventId);
+    return this.prisma.eventPhoto.create({ data: { ...dto, eventId } });
+  }
+
+  async getPhotos(eventId: string) {
+    await this.findOne(eventId);
+    return this.prisma.eventPhoto.findMany({
+      where: { eventId },
+      orderBy: [{ order: 'asc' }, { createdAt: 'asc' }],
+    });
+  }
+
+  async updatePhoto(photoId: string, dto: UpdateEventPhotoDto) {
+    const photo = await this.prisma.eventPhoto.findUnique({ where: { id: photoId } });
+    if (!photo) throw new NotFoundException('Fotoğraf bulunamadı');
+
+    return this.prisma.eventPhoto.update({ where: { id: photoId }, data: dto });
+  }
+
+  async removePhoto(photoId: string) {
+    const photo = await this.prisma.eventPhoto.findUnique({ where: { id: photoId } });
+    if (!photo) throw new NotFoundException('Fotoğraf bulunamadı');
+
+    return this.prisma.eventPhoto.delete({ where: { id: photoId } });
   }
 }

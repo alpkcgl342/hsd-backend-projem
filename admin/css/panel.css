@@ -1,0 +1,22 @@
+/* Yönetim paneli — Tailwind dışındaki birkaç özel kural.
+   Inline <style> olarak duruyordu; CSP inline stil engellediği için
+   ayrı dosyaya alındı. */
+
+body {
+  font-family: 'Inter', system-ui, sans-serif;
+}
+
+/* Giriş sayfası arka planı */
+.arka {
+  background: linear-gradient(135deg, #04067c 0%, #0028a5 55%, #0d6efd 100%);
+}
+
+/* Kenar menüdeki seçili bölüm */
+.menu-oge.aktif {
+  background: rgba(255, 255, 255, 0.14);
+  color: #fff;
+}
+
+.menu-oge.aktif .menu-ikon {
+  opacity: 1;
+}

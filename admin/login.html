@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="noindex, nofollow">
+    <title>Yönetim Paneli — Giriş</title>
+
+    <link rel="stylesheet" href="css/tailwind.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/panel.css">
+
+</head>
+<body class="arka min-h-screen flex items-center justify-center p-4">
+
+    <div class="w-full max-w-md">
+
+        <div class="text-center mb-8">
+            <div class="text-white text-3xl font-extrabold tracking-tight">&lt; HSD &gt;</div>
+            <p class="text-blue-200 text-xs font-semibold tracking-[0.2em] mt-1">HUAWEI STUDENT DEVELOPERS</p>
+        </div>
+
+        <div class="bg-white rounded-3xl p-8 shadow-2xl">
+            <h1 class="text-xl font-bold text-gray-900 mb-1">Yönetim Paneli</h1>
+            <p class="text-gray-400 text-sm mb-6">Devam etmek için giriş yapın.</p>
+
+            <form id="girisFormu" novalidate>
+                <div class="mb-4">
+                    <label for="email" class="block text-sm font-semibold text-gray-700 mb-1.5">E-posta</label>
+                    <input type="email" id="email" autocomplete="username" placeholder="admin@hsd.com"
+                        class="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition">
+                </div>
+
+                <div class="mb-6">
+                    <label for="sifre" class="block text-sm font-semibold text-gray-700 mb-1.5">Şifre</label>
+                    <input type="password" id="sifre" autocomplete="current-password" placeholder="••••••••"
+                        class="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition">
+                </div>
+
+                <button type="submit" id="girisBtn"
+                    class="w-full bg-[#0028a5] hover:bg-[#04067c] text-white font-bold py-3 rounded-xl transition disabled:opacity-60">
+                    Giriş Yap
+                </button>
+
+                <div id="hata" class="hidden mt-4 bg-red-50 border border-red-200 text-red-700 rounded-xl px-4 py-3 text-sm"></div>
+            </form>
+        </div>
+
+        <p class="text-center text-blue-200/70 text-xs mt-6">
+            Yalnızca yetkili kişiler içindir.
+        </p>
+    </div>
+
+<script src="js/api.js"></script>
+<script src="js/login.js"></script>
+</body>
+</html>

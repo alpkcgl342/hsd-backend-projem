@@ -36,7 +36,29 @@ async function bootstrap() {
 
   const app = await NestFactory.create(AppModule);
 
-  app.use(helmet());
+  // Yönetim paneli aynı sunucudan servis edildiği için içerik güvenliği
+  // politikası onun ihtiyaçlarını karşılamalı. Script yalnızca kendi
+  // kökenimizden yüklenir (inline script yok); yazı tipleri Google Fonts'tan,
+  // görseller yüklenen dosyalardan ve dış adreslerden gelebilir.
+  app.use(
+    helmet({
+      contentSecurityPolicy: {
+        directives: {
+          defaultSrc: ["'self'"],
+          scriptSrc: ["'self'"],
+          styleSrc: ["'self'", 'https://fonts.googleapis.com'],
+          fontSrc: ["'self'", 'https://fonts.gstatic.com'],
+          imgSrc: ["'self'", 'data:', 'blob:', 'https:'],
+          connectSrc: ["'self'"],
+          objectSrc: ["'none'"],
+          frameAncestors: ["'none'"],
+          baseUri: ["'self'"],
+          formAction: ["'self'"],
+        },
+      },
+      crossOriginResourcePolicy: { policy: 'cross-origin' },
+    }),
+  );
 
   // Tarayıcıdan gelen istekler için CORS. İzinli adresler CORS_ORIGINS
   // ortam değişkeninden virgülle ayrılarak verilir.

@@ -1,98 +1,128 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# HSD Gelişim — Backend & Yönetim Paneli
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+İstanbul Gelişim Üniversitesi Huawei Student Developers topluluğunun tanıtım
+sitesi için NestJS + Prisma + PostgreSQL arka ucu ve yönetim paneli.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
-
-## Description
-
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
-
-## Project setup
+## Hızlı başlangıç
 
 ```bash
-$ npm install
+# 1) Bağımlılıklar
+npm install
+
+# 2) Veritabanı (Docker ile)
+docker run -d --name hsd-pg -e POSTGRES_PASSWORD=postgres -e POSTGRES_USER=postgres -e POSTGRES_DB=topluluk_db -p 5433:5432 postgres:16-alpine
+
+# 3) Ortam değişkenleri
+cp .env.example .env
+# JWT_SECRET ve JWT_REFRESH_SECRET üretin (ikisi farklı olmalı):
+#   openssl rand -hex 32
+
+# 4) Şema ve başlangıç verisi
+npx prisma migrate deploy
+ADMIN_EMAIL=admin@hsd.com ADMIN_PASSWORD=GucluBirSifre npm run seed
+
+# 5) Çalıştır
+npm run build
+npm run start:prod
 ```
 
-## Compile and run the project
+Sunucu `http://localhost:3000` adresinde açılır.
+Yönetim paneli: `http://localhost:3000/admin/login.html`
+
+## Yönetim paneli
+
+Panel aynı sunucudan `/admin` altında servis edilir; ayrı bir dağıtım
+gerekmez. Giriş için seed ile oluşturulan tek yönetici hesabı kullanılır.
+
+| Bölüm | Neleri yönetir |
+|---|---|
+| Duyurular | Başlık, içerik, kategori |
+| Blog Yazıları | Kapak görseli, kategori, özet, içerik, taslak/yayında |
+| Etkinlikler | Kapak görseli, tarih, kontenjan, **fotoğraf galerisi**, katılımcı listesi |
+| Komiteler | Komiteler (emoji, renk, sıra) ve üyeleri (fotoğraf, bölüm, LinkedIn) |
+| Ekibimiz | Elçi, elçi yardımcıları, kulüp başkanları |
+| Bülten | Abone listesi, CSV dışa aktarma |
+
+Her bölümde ekleme, güncelleme ve silme vardır. Görseller doğrudan panelden
+yüklenir (sürükleyip seçin) ya da adres yapıştırılır.
+
+### Yönetici hesabı
+
+Kayıt ucundan (`POST /auth/register`) herkes `MEMBER` olarak kaydolur; panele
+erişim yalnızca `ADMIN` ve `EDITOR` rollerindedir. Yönetici hesabı seed ile
+oluşturulur:
 
 ```bash
-# development
-$ npm run start
-
-# watch mode
-$ npm run start:dev
-
-# production mode
-$ npm run start:prod
+ADMIN_EMAIL=admin@hsd.com ADMIN_PASSWORD=GucluBirSifre npm run seed
 ```
 
-## Run tests
+Aynı komut var olan bir kullanıcıyı da `ADMIN` yapar.
+
+## Görseller
+
+Panelden yüklenen görseller `uploads/` klasörüne kaydedilir ve `/uploads/...`
+adresinden servis edilir. Bu klasör `.gitignore`'dadır.
+
+Sitenin mevcut üye ve ekip fotoğrafları `prisma/seed-data/gorseller/` altında
+depoda durur; `npm run seed` bunları `uploads/` klasörüne kopyalar (var olan
+dosyaların üzerine yazmaz).
+
+Yükleme kuralları: yalnızca jpg, png, webp, gif, avif; en fazla 5 MB. Dosyanın
+ilk baytları denetlenir, sadece MIME başlığına güvenilmez. Dosya adları
+sunucuda yeniden üretilir.
+
+> **Dağıtımda dikkat:** Render/Vercel gibi ortamlarda disk kalıcı değildir.
+> Kalıcı bir disk (volume) bağlayın ve `UPLOAD_DIR` ile yolunu verin, yoksa
+> yüklenen görseller her dağıtımda kaybolur.
+
+## Ortam değişkenleri
+
+| Değişken | Açıklama |
+|---|---|
+| `DATABASE_URL` | PostgreSQL bağlantısı |
+| `JWT_SECRET` | Access token anahtarı (en az 32 karakter) |
+| `JWT_REFRESH_SECRET` | Refresh token anahtarı — `JWT_SECRET`'tan **farklı** olmalı |
+| `PORT` | Varsayılan 3000 |
+| `CORS_ORIGINS` | Tarayıcıdan istek atacak adresler, virgülle ayrılır |
+| `FRONTEND_URL` | Şifre sıfırlama bağlantısındaki site adresi |
+| `UPLOAD_DIR` | Görsellerin kaydedileceği klasör (varsayılan `./uploads`) |
+| `SMTP_*`, `ADMIN_EMAIL` | E-posta gönderimi. Boşsa e-postalar yalnızca loglanır |
+
+Uygulama, anahtarlar eksik, zayıf (32 karakterden kısa), örnek değerde ya da
+birbiriyle aynı ise **başlamaz**.
+
+## Komutlar
 
 ```bash
-# unit tests
-$ npm run test
-
-# e2e tests
-$ npm run test:e2e
-
-# test coverage
-$ npm run test:cov
+npm run start:dev    # geliştirme (izleyerek)
+npm run build        # panel CSS'i + nest build
+npm run start:prod   # üretim
+npm test             # birim testleri
+npm run seed         # başlangıç verisi ve yönetici hesabı
+npm run admin:css    # yalnızca panel CSS'ini yeniden üret
 ```
 
-## Deployment
+Panelin arayüz sınıfları Tailwind ile derlenir (`admin/css/tailwind.css`).
+`admin/` altında HTML ya da JS değiştirdikten sonra `npm run admin:css`
+çalıştırın; `npm run build` bunu zaten yapar.
 
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
+## Güvenlik
 
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
+- Tüm yazma uçları JWT + rol denetimi arkasında
+- helmet, içerik güvenliği politikası (CSP) ve dakikada 60 istek sınırı
+- Refresh token'lar ayrı anahtarla imzalanır, veritabanında hash'lenir ve
+  kullanıldığında yenilenir; `POST /auth/logout` ile iptal edilir
+- Şifre sıfırlama token'ı yalnızca e-posta ile gönderilir
+- Kişisel veri içeren uçlar (iletişim mesajları, etkinlik katılımcıları)
+  yalnızca yöneticilere açıktır
 
-```bash
-$ npm install -g @nestjs/mau
-$ mau deploy
-```
+## Uç noktalar
 
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
+Herkese açık: `GET /announcements`, `GET /blog`, `GET /blog/:id`,
+`GET /committees`, `GET /committees/:id/members`, `GET /team`, `GET /events`,
+`POST /events/:id/register`, `POST /contact`, `POST /applications`,
+`POST /blog/newsletter/subscribe`
 
-## Resources
-
-Check out a few resources that may come in handy when working with NestJS:
-
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
-
-## Support
-
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
-
-## Stay in touch
-
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
-
-## License
-
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+Yönetim (ADMIN/EDITOR): yukarıdakilerin yazma karşılıkları, `POST /uploads`,
+`GET /blog/admin/all`, `GET /blog/newsletter/subscribers`,
+`GET /events/:id/registrations`, `GET /contact`, `GET /applications`

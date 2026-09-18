@@ -1,0 +1,9 @@
+[
+  { "fullName": "Nurgül Yıldız",     "title": "Elçi",                     "group": "ELCI",            "photoUrl": "nurgul.jpeg",      "order": 0 },
+  { "fullName": "Furkan Erden",      "title": "Elçi Yardımcısı",          "group": "ELCI_YARDIMCISI", "photoUrl": "furkanerden.jpeg", "order": 0 },
+  { "fullName": "Irmak Gündüz",      "title": "Elçi Yardımcısı",          "group": "ELCI_YARDIMCISI", "photoUrl": "irmak.jpeg",       "order": 1 },
+  { "fullName": "Ali Alp Kocaoğlu",  "title": "Web Sitesi Proje Lideri",  "group": "KULUP_BASKANI",   "photoUrl": "alp.jpeg",   "subtitle": "Kulüp 1", "order": 0 },
+  { "fullName": "Eren Baksoy",       "title": "Oyun Proje Lideri",        "group": "KULUP_BASKANI",   "photoUrl": "eren.jpeg",  "subtitle": "Kulüp 2", "order": 1 },
+  { "fullName": "Yaren Timur",       "title": "Sosyal Medya Lideri",      "group": "KULUP_BASKANI",   "photoUrl": "yaren.jpeg", "subtitle": "Kulüp 3", "order": 2 },
+  { "fullName": "Damla Muyan",       "title": "Etkinlik Lideri",          "group": "KULUP_BASKANI",   "photoUrl": "damla.jpeg", "subtitle": "Kulüp 4", "order": 3 }
+]

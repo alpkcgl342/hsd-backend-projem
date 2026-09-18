@@ -30,6 +30,12 @@ function generateSlug(title: string): string {
     + '-' + Date.now().toString().slice(-5); // aynı başlıkta çakışmayı önlemek için
 }
 
+// Kartlarda gösterilecek kısa özet; admin panelde boş bırakılırsa üretilir
+function ozetUret(icerik: string, uzunluk = 160): string {
+  const metin = (icerik || '').replace(/\s+/g, ' ').trim();
+  return metin.length <= uzunluk ? metin : metin.slice(0, uzunluk).trim() + '…';
+}
+
 // Ortalama okuma hızı: dakikada ~200 kelime
 function calculateReadingTime(content: string): number {
   const wordCount = content.trim().split(/\s+/).length;
@@ -42,7 +48,7 @@ export class BlogService {
 
   // --- BLOG YAZILARI ---
 
-  async create(dto: CreatePostDto) {
+  async create(dto: CreatePostDto, authorId: string) {
     const slug = generateSlug(dto.title);
     const readingTime = calculateReadingTime(dto.content);
 
@@ -50,14 +56,18 @@ export class BlogService {
       data: {
         title: dto.title,
         content: dto.content,
+        coverImage: dto.coverImage,
+        excerpt: dto.excerpt || ozetUret(dto.content),
         slug,
         readingTime,
         status: dto.status,
-        authorId: dto.authorId,
+        // Yazar, isteği yapan oturumdan alınır; dışarıdan gönderilen
+        // authorId ile başkasının adına yazı oluşturulamaz.
+        authorId,
         categoryId: dto.categoryId,
         tags: dto.tagIds ? { connect: dto.tagIds.map((id) => ({ id })) } : undefined,
       },
-      include: { category: true, tags: true },
+      include: { category: true, tags: true, author: { select: { fullName: true } } },
     });
   }
 
@@ -117,12 +127,19 @@ export class BlogService {
       data: {
         title: dto.title,
         content: dto.content,
+        coverImage: dto.coverImage,
+        excerpt:
+          dto.excerpt !== undefined
+            ? dto.excerpt
+            : dto.content
+              ? ozetUret(dto.content)
+              : undefined,
         status: dto.status,
         categoryId: dto.categoryId,
         readingTime: dto.content ? calculateReadingTime(dto.content) : undefined,
         tags: dto.tagIds ? { set: dto.tagIds.map((tid) => ({ id: tid })) } : undefined,
       },
-      include: { category: true, tags: true },
+      include: { category: true, tags: true, author: { select: { fullName: true } } },
     });
   }
 
@@ -183,5 +200,31 @@ export class BlogService {
       where: { email },
       data: { isActive: false },
     });
+  }
+
+  // Yönetim paneli: abone listesi. Aboneleri görüntülemenin bir yolu yoktu.
+  findAllSubscribers(onlyActive?: boolean) {
+    return this.prisma.newsletterSubscriber.findMany({
+      where: onlyActive ? { isActive: true } : {},
+      orderBy: { subscribedAt: 'desc' },
+    });
+  }
+
+  async removeSubscriber(id: string) {
+    const existing = await this.prisma.newsletterSubscriber.findUnique({ where: { id } });
+    if (!existing) throw new NotFoundException('Abone bulunamadı');
+
+    return this.prisma.newsletterSubscriber.delete({ where: { id } });
+  }
+
+  // Bülten gönderimi için: aktif abonelerin e-posta listesi
+  async subscriberEmails() {
+    const aboneler = await this.prisma.newsletterSubscriber.findMany({
+      where: { isActive: true },
+      select: { email: true },
+      orderBy: { subscribedAt: 'asc' },
+    });
+
+    return aboneler.map((a) => a.email);
   }
 }

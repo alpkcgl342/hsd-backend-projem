@@ -10,9 +10,19 @@ export class CreatePostDto {
   @IsNotEmpty()
   content: string;
 
+  // Kart görünümündeki kapak görseli (/uploads ucundan gelen adres)
+  @IsOptional()
   @IsString()
-  @IsNotEmpty()
-  authorId: string;
+  coverImage?: string;
+
+  // Kartta gösterilecek kısa özet; boş bırakılırsa içerikten üretilir
+  @IsOptional()
+  @IsString()
+  excerpt?: string;
+
+  @IsOptional()
+  @IsString()
+  authorId?: string;
 
   @IsOptional()
   @IsEnum(PostStatus)
