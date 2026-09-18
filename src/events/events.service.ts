@@ -1,18 +1,20 @@
+import { PrismaService } from '../prisma/prisma.service';
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
-import { PrismaClient } from '@prisma/client';
 import { MailService } from '../common/mail/mail.service';
 import { CreateEventDto } from './dto/create-event.dto';
 import { UpdateEventDto } from './dto/update-event.dto';
 import { CreateRegistrationDto } from './dto/create-registration.dto';
 
-const prisma = new PrismaClient();
 
 @Injectable()
 export class EventsService {
-  constructor(private mail: MailService) {}
+  constructor(
+    private prisma: PrismaService,
+    private mail: MailService,
+  ) {}
 
   async create(createEventDto: CreateEventDto) {
-    return prisma.event.create({
+    return this.prisma.event.create({
       data: {
         title: createEventDto.title,
         description: createEventDto.description,
@@ -38,20 +40,20 @@ export class EventsService {
         where.startDate = { lt: new Date() };
       }
 
-      return prisma.event.findMany({
+      return this.prisma.event.findMany({
         where,
         orderBy: { startDate: 'asc' },
       });
     }
 
   async findOne(id: string) {
-    return prisma.event.findUnique({
+    return this.prisma.event.findUnique({
       where: { id },
     });
   }
 
   async update(id: string, updateEventDto: UpdateEventDto) {
-    return prisma.event.update({
+    return this.prisma.event.update({
       where: { id },
       data: {
         ...updateEventDto,
@@ -62,54 +64,66 @@ export class EventsService {
   }
 
   async remove(id: string) {
-    const event = await prisma.event.findUnique({ where: { id } });
+    const event = await this.prisma.event.findUnique({ where: { id } });
     if (!event) {
       throw new NotFoundException(`${id} ID'li etkinlik bulunamadı`);
     }
-    return prisma.event.delete({
+    return this.prisma.event.delete({
       where: { id },
     });
   }
 
   async register(eventId: string, dto: CreateRegistrationDto) {
-    const event = await prisma.event.findUnique({
-      where: { id: eventId },
-      include: { registrations: true },
+    // Kontenjan kontrolü ile kaydın oluşturulması ayrı sorgulardaydı.
+    // Eş zamanlı isteklerde hepsi "yer var" görüp kayıt oluşturabiliyor,
+    // kontenjan aşılabiliyordu. Artık ikisi tek bir transaction içinde
+    // ve satır kilidi (FOR UPDATE) altında yapılıyor.
+    const { registration, eventTitle } = await this.prisma.$transaction(async (tx) => {
+      const event = await tx.event.findUnique({ where: { id: eventId } });
+
+      if (!event) {
+        throw new NotFoundException(`${eventId} ID'li etkinlik bulunamadı`);
+      }
+
+      if (event.isCancelled) {
+        throw new BadRequestException('Bu etkinlik iptal edilmiş, kayıt alınamaz');
+      }
+
+      // Etkinlik satırını kilitle: aynı etkinliğe gelen diğer kayıt
+      // istekleri bu transaction bitene kadar bekler.
+      await tx.$queryRaw`SELECT id FROM "Event" WHERE id = ${eventId} FOR UPDATE`;
+
+      const registeredCount = await tx.eventRegistration.count({ where: { eventId } });
+
+      if (registeredCount >= event.capacity) {
+        throw new BadRequestException('Kontenjan dolmuştur');
+      }
+
+      const created = await tx.eventRegistration.create({
+        data: {
+          eventId,
+          fullName: dto.fullName,
+          email: dto.email,
+          studentNo: dto.studentNo,
+        },
+      });
+
+      return { registration: created, eventTitle: event.title };
     });
 
-    if (!event) {
-      throw new NotFoundException(`${eventId} ID'li etkinlik bulunamadı`);
-    }
+    // E-posta transaction dışında gönderilir; SMTP yavaşlığı kilidi uzatmasın.
+    await this.mail.sendEventConfirmation(dto.email, dto.fullName, eventTitle);
 
-    if (event.isCancelled) {
-      throw new BadRequestException('Bu etkinlik iptal edilmiş, kayıt alınamaz');
-    }
-
-    if (event.registrations.length >= event.capacity) {
-      throw new BadRequestException('Kontenjan dolmuştur');
-    }
-
-    const registration = await prisma.eventRegistration.create({
-      data: {
-        eventId,
-        fullName: dto.fullName,
-        email: dto.email,
-        studentNo: dto.studentNo,
-      },
-    });
-  
-
-  await this.mail.sendEventConfirmation(dto.email, dto.fullName, event.title);
-  return registration;
+    return registration;
   }
 
   async getRegistrations(eventId: string) {
-    const event = await prisma.event.findUnique({ where: { id: eventId } });
+    const event = await this.prisma.event.findUnique({ where: { id: eventId } });
     if (!event) {
       throw new NotFoundException(`${eventId} ID'li etkinlik bulunamadı`);
     }
 
-    return prisma.eventRegistration.findMany({
+    return this.prisma.eventRegistration.findMany({
       where: { eventId },
       orderBy: { registeredAt: 'asc' },
     });

@@ -1,36 +1,38 @@
+import { PrismaService } from '../prisma/prisma.service';
+import { AnnouncementCategory } from '@prisma/client';
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { PrismaClient } from '@prisma/client';
 import { CreateAnnouncementDto } from './dto/create-announcement.dto';
 import { UpdateAnnouncementDto } from './dto/update-announcement.dto';
 
-const prisma = new PrismaClient();
 
 @Injectable()
 export class AnnouncementsService {
+  constructor(private prisma: PrismaService) {}
+
   create(dto: CreateAnnouncementDto) {
-    return prisma.announcement.create({ data: dto });
+    return this.prisma.announcement.create({ data: dto });
   }
 
-  findAll(category?: string) {
-    return prisma.announcement.findMany({
-      where: category ? { category: category as any } : {},
+  findAll(category?: AnnouncementCategory) {
+    return this.prisma.announcement.findMany({
+      where: category ? { category } : {},
       orderBy: { createdAt: 'desc' },
     });
   }
 
   async findOne(id: string) {
-    const announcement = await prisma.announcement.findUnique({ where: { id } });
+    const announcement = await this.prisma.announcement.findUnique({ where: { id } });
     if (!announcement) throw new NotFoundException(`Duyuru bulunamadı`);
     return announcement;
   }
 
   async update(id: string, dto: UpdateAnnouncementDto) {
     await this.findOne(id);
-    return prisma.announcement.update({ where: { id }, data: dto });
+    return this.prisma.announcement.update({ where: { id }, data: dto });
   }
 
   async remove(id: string) {
     await this.findOne(id);
-    return prisma.announcement.delete({ where: { id } });
+    return this.prisma.announcement.delete({ where: { id } });
   }
 }

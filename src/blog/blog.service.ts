@@ -1,18 +1,21 @@
+import { PrismaService } from '../prisma/prisma.service';
+import { PostStatus } from '@prisma/client';
 import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
-import { PrismaClient } from '@prisma/client';
 import { CreatePostDto } from './dto/create-post.dto';
 import { UpdatePostDto } from './dto/update-post.dto';
 import { CreateCategoryDto } from './dto/create-category.dto';
 import { CreateTagDto } from './dto/create-tag.dto';
 import { SubscribeNewsletterDto } from './dto/subscribe-newsletter.dto';
 
-const prisma = new PrismaClient();
 
 // Türkçe karakterleri de düzgün şekilde URL-uyumlu slug'a çevirir
 function generateSlug(title: string): string {
   const trMap: Record<string, string> = {
     ç: 'c', Ç: 'c', ğ: 'g', Ğ: 'g', ı: 'i', İ: 'i',
     ö: 'o', Ö: 'o', ş: 's', Ş: 's', ü: 'u', Ü: 'u',
+    // Düzeltme işaretli harfler eşlenmediği için slug'dan tamamen düşüyordu
+    // ("Yapay Zekâ" -> "yapay-zek").
+    â: 'a', Â: 'a', î: 'i', Î: 'i', û: 'u', Û: 'u',
   };
   const normalized = title
     .split('')
@@ -35,13 +38,15 @@ function calculateReadingTime(content: string): number {
 
 @Injectable()
 export class BlogService {
+  constructor(private prisma: PrismaService) {}
+
   // --- BLOG YAZILARI ---
 
   async create(dto: CreatePostDto) {
     const slug = generateSlug(dto.title);
     const readingTime = calculateReadingTime(dto.content);
 
-    return prisma.blogPost.create({
+    return this.prisma.blogPost.create({
       data: {
         title: dto.title,
         content: dto.content,
@@ -56,8 +61,23 @@ export class BlogService {
     });
   }
 
+  // Herkese açık liste: yalnızca yayımlanmış yazılar döner.
+  // Daha önce taslak (DRAFT) yazılar da bu listede görünüyordu.
   findAll(categoryId?: string, tagId?: string) {
-    return prisma.blogPost.findMany({
+    return this.prisma.blogPost.findMany({
+      where: {
+        status: PostStatus.PUBLISHED,
+        ...(categoryId && { categoryId }),
+        ...(tagId && { tags: { some: { id: tagId } } }),
+      },
+      include: { category: true, tags: true, author: { select: { fullName: true } } },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  // Yönetim paneli için: taslaklar dâhil tüm yazılar.
+  findAllForAdmin(categoryId?: string, tagId?: string) {
+    return this.prisma.blogPost.findMany({
       where: {
         ...(categoryId && { categoryId }),
         ...(tagId && { tags: { some: { id: tagId } } }),
@@ -68,15 +88,20 @@ export class BlogService {
   }
 
   async findOne(id: string) {
-    const post = await prisma.blogPost.findUnique({
+    const post = await this.prisma.blogPost.findUnique({
       where: { id },
       include: { category: true, tags: true, author: { select: { fullName: true } } },
     });
 
     if (!post) throw new NotFoundException('Blog yazısı bulunamadı');
 
+    // Taslak yazılar herkese açık uçtan okunamaz.
+    if (post.status !== PostStatus.PUBLISHED) {
+      throw new NotFoundException('Blog yazısı bulunamadı');
+    }
+
     // Her görüntülemede sayaç artırılır
-    return prisma.blogPost.update({
+    return this.prisma.blogPost.update({
       where: { id },
       data: { viewCount: { increment: 1 } },
       include: { category: true, tags: true, author: { select: { fullName: true } } },
@@ -84,10 +109,10 @@ export class BlogService {
   }
 
   async update(id: string, dto: UpdatePostDto) {
-    const existing = await prisma.blogPost.findUnique({ where: { id } });
+    const existing = await this.prisma.blogPost.findUnique({ where: { id } });
     if (!existing) throw new NotFoundException('Blog yazısı bulunamadı');
 
-    return prisma.blogPost.update({
+    return this.prisma.blogPost.update({
       where: { id },
       data: {
         title: dto.title,
@@ -102,59 +127,59 @@ export class BlogService {
   }
 
   async remove(id: string) {
-    const existing = await prisma.blogPost.findUnique({ where: { id } });
+    const existing = await this.prisma.blogPost.findUnique({ where: { id } });
     if (!existing) throw new NotFoundException('Blog yazısı bulunamadı');
-    return prisma.blogPost.delete({ where: { id } });
+    return this.prisma.blogPost.delete({ where: { id } });
   }
 
   // --- KATEGORİ ---
 
   async createCategory(dto: CreateCategoryDto) {
-    const existing = await prisma.category.findUnique({ where: { name: dto.name } });
+    const existing = await this.prisma.category.findUnique({ where: { name: dto.name } });
     if (existing) throw new ConflictException('Bu kategori zaten var');
-    return prisma.category.create({ data: dto });
+    return this.prisma.category.create({ data: dto });
   }
 
   findAllCategories() {
-    return prisma.category.findMany();
+    return this.prisma.category.findMany();
   }
 
   // --- ETİKET ---
 
   async createTag(dto: CreateTagDto) {
-    const existing = await prisma.tag.findUnique({ where: { name: dto.name } });
+    const existing = await this.prisma.tag.findUnique({ where: { name: dto.name } });
     if (existing) throw new ConflictException('Bu etiket zaten var');
-    return prisma.tag.create({ data: dto });
+    return this.prisma.tag.create({ data: dto });
   }
 
   findAllTags() {
-    return prisma.tag.findMany();
+    return this.prisma.tag.findMany();
   }
 
   // --- BÜLTEN ABONELİĞİ ---
 
   async subscribe(dto: SubscribeNewsletterDto) {
-    const existing = await prisma.newsletterSubscriber.findUnique({ where: { email: dto.email } });
+    const existing = await this.prisma.newsletterSubscriber.findUnique({ where: { email: dto.email } });
 
     if (existing) {
       if (existing.isActive) {
         throw new ConflictException('Bu e-posta zaten abone');
       }
       // Daha önce abonelikten çıkmışsa tekrar aktif et
-      return prisma.newsletterSubscriber.update({
+      return this.prisma.newsletterSubscriber.update({
         where: { email: dto.email },
         data: { isActive: true },
       });
     }
 
-    return prisma.newsletterSubscriber.create({ data: dto });
+    return this.prisma.newsletterSubscriber.create({ data: dto });
   }
 
   async unsubscribe(email: string) {
-    const existing = await prisma.newsletterSubscriber.findUnique({ where: { email } });
+    const existing = await this.prisma.newsletterSubscriber.findUnique({ where: { email } });
     if (!existing) throw new NotFoundException('Bu e-posta abone listesinde bulunamadı');
 
-    return prisma.newsletterSubscriber.update({
+    return this.prisma.newsletterSubscriber.update({
       where: { email },
       data: { isActive: false },
     });

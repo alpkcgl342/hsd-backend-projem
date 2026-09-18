@@ -1,15 +1,14 @@
+import { PrismaService } from '../prisma/prisma.service';
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { PrismaClient } from '@prisma/client';
 import { CreateContactDto } from './dto/create-contact.dto';
 import * as nodemailer from 'nodemailer';
 
-const prisma = new PrismaClient();
 
 @Injectable()
 export class ContactService {
   private transporter: nodemailer.Transporter;
 
-  constructor() {
+  constructor(private prisma: PrismaService) {
     this.transporter = nodemailer.createTransport({
       host: process.env.SMTP_HOST || 'smtp.gmail.com',
       port: Number(process.env.SMTP_PORT) || 587,
@@ -22,7 +21,7 @@ export class ContactService {
   }
 
   async create(dto: CreateContactDto, ipAddress?: string) {
-    const contactMessage = await prisma.contactMessage.create({
+    const contactMessage = await this.prisma.contactMessage.create({
       data: {
         fullName: dto.name,
         email: dto.email,
@@ -60,13 +59,13 @@ export class ContactService {
   }
 
   async findAll() {
-    return prisma.contactMessage.findMany({
+    return this.prisma.contactMessage.findMany({
       orderBy: { createdAt: 'desc' },
     });
   }
 
   async findOne(id: string) {
-    const message = await prisma.contactMessage.findUnique({ where: { id } });
+    const message = await this.prisma.contactMessage.findUnique({ where: { id } });
     if (!message) {
       throw new NotFoundException(`${id} ID'li mesaj bulunamadı`);
     }
@@ -74,10 +73,10 @@ export class ContactService {
   }
 
   async remove(id: string) {
-    const message = await prisma.contactMessage.findUnique({ where: { id } });
+    const message = await this.prisma.contactMessage.findUnique({ where: { id } });
     if (!message) {
       throw new NotFoundException(`${id} ID'li mesaj bulunamadı`);
     }
-    return prisma.contactMessage.delete({ where: { id } });
+    return this.prisma.contactMessage.delete({ where: { id } });
   }
 }

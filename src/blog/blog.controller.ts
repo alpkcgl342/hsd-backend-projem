@@ -38,6 +38,14 @@ export class BlogController {
     return this.blogService.findAll(categoryId, tagId);
   }
 
+  // Taslaklar dâhil tüm yazılar; yalnızca yönetim için.
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN, Role.EDITOR)
+  @Get('admin/all')
+  findAllForAdmin(@Query('categoryId') categoryId?: string, @Query('tagId') tagId?: string) {
+    return this.blogService.findAllForAdmin(categoryId, tagId);
+  }
+
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.blogService.findOne(id);

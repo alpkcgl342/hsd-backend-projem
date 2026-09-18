@@ -1,4 +1,4 @@
-import { Injectable, CanActivate, ExecutionContext } from '@nestjs/common';
+import { Injectable, CanActivate, ExecutionContext, ForbiddenException } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { ROLES_KEY } from '../decorators/roles.decorator';
 import { Role } from '@prisma/client';
@@ -13,9 +13,20 @@ export class RolesGuard implements CanActivate {
       context.getClass(),
     ]);
 
-    if (!requiredRoles) return true;
+    if (!requiredRoles || requiredRoles.length === 0) return true;
 
     const { user } = context.switchToHttp().getRequest();
-    return requiredRoles?.includes(user?.role);
+
+    // JwtAuthGuard'ın bu guard'dan önce çalışmadığı bir durumda user tanımsız
+    // kalır. Sessizce geçmek yerine açıkça reddediyoruz.
+    if (!user?.role) {
+      throw new ForbiddenException('Bu işlem için yetkiniz yok');
+    }
+
+    if (!requiredRoles.includes(user.role)) {
+      throw new ForbiddenException('Bu işlem için yetkiniz yok');
+    }
+
+    return true;
   }
 }

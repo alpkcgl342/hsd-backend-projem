@@ -1,18 +1,20 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { ContactService } from './contact.service';
+import { PrismaService } from '../prisma/prisma.service';
+import { createPrismaMock } from '../common/testing/prisma.mock';
 
 describe('ContactService', () => {
   let service: ContactService;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
-      providers: [ContactService],
+      providers: [ContactService, { provide: PrismaService, useValue: createPrismaMock() }],
     }).compile();
 
     service = module.get<ContactService>(ContactService);
   });
 
-  it('should be defined', () => {
+  it('tanımlı olmalı', () => {
     expect(service).toBeDefined();
   });
 });

@@ -2,6 +2,7 @@ import { Controller, Get, Post, Patch, Delete, Body, Param, Query, UseGuards } f
 import { AnnouncementsService } from './announcements.service';
 import { CreateAnnouncementDto } from './dto/create-announcement.dto';
 import { UpdateAnnouncementDto } from './dto/update-announcement.dto';
+import { FilterAnnouncementDto } from './dto/filter-announcement.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
@@ -18,9 +19,11 @@ export class AnnouncementsController {
     return this.service.create(dto);
   }
 
+  // Kategori değeri doğrulanmadan Prisma'ya geçiriliyordu; geçersiz bir
+  // değer 500 hatasına yol açıyordu. Artık enum'a göre doğrulanıyor.
   @Get()
-  findAll(@Query('category') category?: string) {
-    return this.service.findAll(category);
+  findAll(@Query() query: FilterAnnouncementDto) {
+    return this.service.findAll(query.category);
   }
 
   @Get(':id')
